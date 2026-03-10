@@ -7,17 +7,23 @@ file.
 ## Quick start
 
 ```bash
-# Install dependencies (BeautifulSoup + requests)
-pip install requests beautifulsoup4 lxml
+# From the scripts/ directory:
+
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Sync dependencies into a local .venv (reads uv.lock)
+uv sync
 
 # 1. Fetch the archived HTML (writes ../data/glossary_raw.html)
-python3 scrape.py
+uv run scrape.py
 
 # 2. Parse it into Markdown (writes ../glossary.md)
-python3 parse_glossary.py
+uv run parse_glossary.py
 ```
 
-Both scripts accept `--help` for all options.
+Both scripts accept `--help` for all options.  
+`uv run` automatically uses the project's `.venv`; no manual activation needed.
 
 ---
 
