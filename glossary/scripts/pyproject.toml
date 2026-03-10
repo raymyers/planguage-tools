@@ -1,0 +1,10 @@
+[project]
+name = "gilb-glossary"
+version = "0.1.0"
+description = "Scrape and parse Tom Gilb's Planguage Concept Glossary into Markdown"
+requires-python = ">=3.12"
+dependencies = [
+    "beautifulsoup4>=4.14.3",
+    "lxml>=6.0.2",
+    "requests>=2.32.5",
+]
