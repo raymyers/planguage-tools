@@ -21,6 +21,8 @@ pub enum Command {
     Get(GetArgs),
     /// Create a starter Planguage workspace layout
     Init(InitArgs),
+    /// Create a starter Planguage document from a built-in template
+    New(NewArgs),
     /// Emit a quality-analysis prompt using input text or a file
     Qa(PromptArgs),
     /// Search markdown documents in the workspace
@@ -55,6 +57,15 @@ pub struct InitArgs {
     /// Target directory to initialize; defaults to the current directory
     #[arg(long)]
     pub dir: Option<String>,
+}
+
+#[derive(Debug, clap::Args)]
+pub struct NewArgs {
+    /// Built-in template name to use
+    #[arg(long, default_value = "requirement")]
+    pub template: String,
+    /// Output file path relative to the workspace root
+    pub output: String,
 }
 
 #[derive(Debug, clap::Args)]

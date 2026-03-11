@@ -6,6 +6,7 @@ use crate::cli::args::Command;
 mod convert;
 mod get;
 mod init;
+mod new;
 mod qa;
 mod search;
 mod stats;
@@ -17,6 +18,7 @@ pub fn run(command: Command, app: &App) -> Result<ExitCode, crate::application::
         Command::Convert(args) => convert::run(args, app),
         Command::Get(args) => get::run(args, app),
         Command::Init(args) => init::run(args, app),
+        Command::New(args) => new::run(args, app),
         Command::Qa(args) => qa::run(args, app),
         Command::Search(args) => search::run(args, app),
         Command::Stats(args) => stats::run(args, app),
