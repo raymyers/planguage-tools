@@ -12,6 +12,12 @@ pub struct SearchQuery {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocumentStats {
+    pub markdown_files: usize,
+    pub directories_with_markdown: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TreeNode {
     pub name: String,
     pub children: Vec<TreeNode>,

@@ -1,9 +1,10 @@
 pub mod error;
 
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use crate::adapters::fs_repository::FsDocumentRepository;
-use crate::domain::document::{DocumentSummary, SearchQuery};
+use crate::domain::document::{DocumentStats, DocumentSummary, SearchQuery};
 use crate::domain::metadata::BuildMetadata;
 use crate::ports::repository::DocumentRepository;
 
@@ -39,5 +40,31 @@ impl App {
         query: &SearchQuery,
     ) -> Result<Vec<DocumentSummary>, error::AppError> {
         self.documents.search_markdown(self.workspace_root(), query)
+    }
+
+    pub fn document_stats(
+        &self,
+        path_prefix: Option<&str>,
+    ) -> Result<DocumentStats, error::AppError> {
+        let documents = self.list_documents()?;
+        let filtered = documents.into_iter().filter(|document| {
+            path_prefix.is_none_or(|prefix| document.path.to_string_lossy().starts_with(prefix))
+        });
+
+        let mut markdown_files = 0;
+        let mut directories = BTreeSet::new();
+
+        for document in filtered {
+            markdown_files += 1;
+
+            if let Some(parent) = document.path.parent() {
+                directories.insert(parent.to_path_buf());
+            }
+        }
+
+        Ok(DocumentStats {
+            markdown_files,
+            directories_with_markdown: directories.len(),
+        })
     }
 }
