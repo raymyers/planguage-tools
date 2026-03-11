@@ -1,0 +1,16 @@
+[package]
+name = "plg"
+version = "0.1.0"
+edition = "2024"
+description = "CLI for navigating and manipulating Planguage markdown"
+license = "MIT"
+
+[dependencies]
+clap = { version = "4.5.60", features = ["derive", "cargo"] }
+thiserror = "2.0.18"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+
+[dev-dependencies]
+assert_cmd = "2.0.17"
+predicates = "3.1.3"

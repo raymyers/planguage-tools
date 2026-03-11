@@ -2,7 +2,7 @@
 
 ## Goals
 
-Build a Rust CLI named `plg` for navigating and manipulating Planguage markdown documents.
+Build a Rust CLI named `plg` for navigating and analyzing Planguage markdown documents.
 
 The CLI should:
 - provide a clean, kubectl-style verb-oriented command surface,
@@ -16,10 +16,10 @@ The CLI should:
 ## Design principles
 
 - **Local-first**: operate directly on markdown files in the repository.
-- **Safe by default**: no destructive writes without explicit user intent; prefer dry-run and diff previews.
+- **Read-first**: prioritize navigation, search, inspection, and analysis before any editing features.
 - **Parse, do not grep, in the core**: shell tools may inspire workflows, but core behavior should use parsed document structure.
 - **Human and machine friendly**: every read command should have readable defaults and structured output modes.
-- **Tolerant reader, conservative writer**: parse imperfect documents without panic; only rewrite what the tool understands.
+- **Tolerant reader**: parse imperfect documents without panic and surface diagnostics instead of failing hard.
 - **Thin CLI, strong core**: argument parsing should stay shallow while application and domain layers hold behavior.
 - **Prompt generation, not model execution**: `convert` and `qa` emit prompts only in v1.
 
@@ -37,7 +37,6 @@ To avoid overbuilding the first release, define a hard v1 subset.
 - `plg diff`
 - `plg convert`
 - `plg qa`
-- `plg patch`
 - `plg init`
 - `plg new`
 - `plg stats`
@@ -46,9 +45,6 @@ To avoid overbuilding the first release, define a hard v1 subset.
 
 ### Nice to have after v1 core is green
 
-- `plg annotate`
-- `plg split`
-- `plg merge`
 - `plg index`
 - `plg graph`
 - `plg doctor`
@@ -59,6 +55,7 @@ To avoid overbuilding the first release, define a hard v1 subset.
 ### Explicitly out of scope for initial implementation
 
 - direct model or API calls,
+- semantic document mutation commands,
 - persisted search infrastructure beyond a simple local cache seam,
 - remote repositories or SaaS backends,
 - multi-user synchronization,
@@ -75,7 +72,6 @@ To avoid overbuilding the first release, define a hard v1 subset.
 - `plg lint` — Check Planguage files for structural, syntax, and style issues without rewriting them.
 - `plg fmt` — Reformat Planguage markdown into a consistent canonical layout.
 - `plg diff` — Compare two documents or versions by semantic fields instead of plain text only.
-- `plg patch` — Apply targeted updates to specific tags or parameters in an existing document.
 - `plg init` — Create a new Planguage workspace, repo layout, or starter document templates.
 - `plg new` — Generate a new Planguage document or object from a template.
 - `plg stats` — Report counts, coverage, defect density, fuzzy terms, and other repository metrics.
@@ -87,9 +83,6 @@ To avoid overbuilding the first release, define a hard v1 subset.
 
 ### Follow-on commands
 
-- `plg annotate` — Add notes, sources, assumptions, or risk annotations to a spec item.
-- `plg split` — Break a large document into smaller tagged units or per-object files.
-- `plg merge` — Combine related Planguage fragments into a single structured document.
 - `plg index` — Build or refresh a local search index for fast document lookup.
 - `plg graph` — Visualize links between tags, sources, owners, assumptions, and dependent specs.
 - `plg doctor` — Diagnose workspace, config, parser, or indexing problems and suggest fixes.
@@ -107,7 +100,7 @@ To avoid overbuilding the first release, define a hard v1 subset.
 Use a ports-and-adapters layout with a small application core:
 
 - **Domain layer**: Planguage concepts, validation rules, semantic IDs, metrics, and document model.
-- **Application layer**: use cases for each command, query services, formatters, mutation services, and prompt generation.
+- **Application layer**: use cases for each command, query services, formatters, diagnostics, and prompt generation.
 - **Ports**: traits for document repositories, parsers, index stores, prompt template providers, clocks, filesystem access, and output rendering.
 - **Adapters**: markdown filesystem repository, parser implementation, search adapter, prompt-file adapter, terminal renderer, JSON renderer, and config loader.
 - **CLI layer**: command parsing, flag validation, output mode selection, exit code mapping, and user-facing errors.
@@ -129,7 +122,6 @@ src/
       lint.rs
       fmt.rs
       diff.rs
-      patch.rs
       init.rs
       new.rs
       stats.rs
@@ -149,7 +141,6 @@ src/
     diagnostics.rs
     rules.rs
     query.rs
-    patch.rs
   ports/
     mod.rs
     repository.rs
@@ -185,7 +176,7 @@ Prefer small, established Rust crates only where justified by project needs. Lik
 - `ignore` for repository traversal with `.gitignore` support,
 - `regex` only if needed and kept constrained,
 - `assert_cmd` and `predicates` for CLI integration tests,
-- `tempfile` for test workspaces and atomic-write workflows,
+- `tempfile` for test workspaces,
 - `similar` or a similarly small crate if semantic diff rendering needs support,
 - `insta` only if snapshot tests become clearly valuable.
 
@@ -217,12 +208,11 @@ Acceptance criteria:
 - `plg diff` reports semantic changes at object and field level,
 - exit codes are stable and documented.
 
-### Milestone D: prompt generation and safe mutation
+### Milestone D: prompt generation
 
 Acceptance criteria:
 - `plg convert` and `plg qa` emit deterministic prompt text,
-- `plg patch` supports dry-run and safe write behavior,
-- all mutating operations have integration tests using temp directories,
+- prompt composition is covered by tests,
 - no prompt-emitting command performs network access.
 
 ### Milestone E: release readiness
@@ -247,7 +237,6 @@ For each command shipped in v1:
 
 This prevents the architecture from becoming speculative and keeps ports grounded in real use cases.
 
-## Command behavior plan
 ## Command behavior plan
 
 ### Read/query commands
@@ -333,45 +322,6 @@ Behavior:
 - accept one or more files,
 - print a ready-to-send quality-audit prompt,
 - optionally support prompt-only vs wrapped-document modes.
-
-### Mutation commands
-
-#### `plg patch`
-
-Purpose:
-- apply targeted semantic edits to existing objects.
-
-Expected capabilities:
-- patch by tag and field,
-- support replace, insert, and remove operations,
-- write changes safely with diff preview and atomic file replacement.
-
-#### `plg annotate`
-
-Purpose:
-- add comment or metadata fields without forcing users to hand-edit markdown.
-
-Expected capabilities:
-- append `Note`, `Comment`, `Source`, `Assumptions`, or `Risks`,
-- preserve formatting conventions.
-
-#### `plg split`
-
-Purpose:
-- normalize large documents into smaller reusable units.
-
-Expected capabilities:
-- split by top-level heading, tag prefix, or object boundary,
-- generate stable file names.
-
-#### `plg merge`
-
-Purpose:
-- combine fragments while preserving ordering and metadata.
-
-Expected capabilities:
-- merge by file list, directory, or tag family,
-- detect duplicate tags before writing.
 
 ### Quality and formatting commands
 
@@ -532,8 +482,7 @@ Define predictable exit codes.
 - `1` generic runtime or usage failure,
 - `2` parse or validation failure,
 - `3` lint or qa findings above threshold,
-- `4` not found,
-- `5` conflicting mutation request.
+- `4` not found.
 
 Translate domain and adapter errors into consistent user-facing messages.
 
@@ -574,7 +523,7 @@ Cover:
 
 Cover:
 - end-to-end CLI invocations with fixture repositories,
-- `get`, `search`, `tree`, `lint`, `fmt --check`, `patch`, and `init`,
+- `get`, `search`, `tree`, `lint`, `fmt --check`, `diff`, and `init`,
 - stdout/stderr separation,
 - exit codes,
 - config precedence.
@@ -591,8 +540,7 @@ Use for:
 
 Consider for:
 - parser resilience,
-- formatter idempotence,
-- split/merge round-trip safety.
+- formatter idempotence.
 
 ## Linting and quality gates
 
@@ -651,15 +599,7 @@ If useful, add:
 - [ ] Add tests proving prompt composition is deterministic and complete.
 - [ ] Add clear help text stating that these commands emit prompts and do not call external models.
 
-### Phase 6: mutation commands
-
-- [ ] Implement `plg patch` with safe write, dry-run, and diff preview support.
-- [ ] Implement `plg annotate` for note, source, assumption, and risk additions.
-- [ ] Implement `plg split` for object-boundary and heading-based extraction.
-- [ ] Implement `plg merge` with duplicate-tag detection.
-- [ ] Add round-trip tests for patch, split, and merge operations.
-
-### Phase 7: workspace and ecosystem commands
+### Phase 6: workspace and ecosystem commands
 
 - [ ] Implement `plg init` to scaffold a repository layout and starter files.
 - [ ] Implement `plg new` for template-based object generation.
@@ -668,7 +608,7 @@ If useful, add:
 - [ ] Implement `plg doctor`, `plg config`, `plg export`, `plg import`, `plg completion`, and `plg version`.
 - [ ] Add integration tests for scaffolding, config, and export flows.
 
-### Phase 8: polish and release readiness
+### Phase 7: polish and release readiness
 
 - [ ] Improve help text, examples, and error messages across all commands.
 - [ ] Verify stdout/stderr discipline and stable exit codes.
@@ -696,7 +636,7 @@ If useful, add:
 
 The initial `plg` CLI is done when:
 - the Rust binary builds cleanly,
-- core commands for read, search, lint, format, prompt emission, and safe patching work on fixture repositories,
+- core commands for read, search, lint, format, prompt emission, and workspace bootstrap work on fixture repositories,
 - architecture boundaries are enforced through ports and adapters,
 - automated tests cover domain, application, adapters, and CLI behavior,
 - and formatting, linting, tests, and docs all pass in CI.
