@@ -560,16 +560,16 @@ If useful, add:
 
 ### Phase 1: bootstrap
 
-- [ ] Create a Rust binary crate with executable name `plg`.
-- [ ] Add core dependencies for CLI parsing, serialization, errors, traversal, and testing.
-- [ ] Establish the ports-and-adapters module layout.
-- [ ] Add a minimal config loader and workspace root discovery.
-- [ ] Add a shared error type and exit code mapper.
-- [ ] Add fixture-based integration test infrastructure.
+- [x] Create a Rust binary crate with executable name `plg`.
+- [x] Add core dependencies for CLI parsing, serialization, errors, traversal, and testing.
+- [x] Establish the ports-and-adapters module layout.
+- [x] Add a minimal config loader and workspace root discovery.
+- [x] Add a shared error type and exit code mapper.
+- [x] Add fixture-based integration test infrastructure.
 
 ### Phase 2: parsing and repository core
 
-- [ ] Implement filesystem document discovery for markdown files.
+- [x] Implement filesystem document discovery for markdown files.
 - [ ] Implement a tolerant markdown-to-object parser for Planguage field blocks.
 - [ ] Model `Document`, `PlanguageObject`, and `Diagnostic` domain types.
 - [ ] Preserve unknown fields and source locations during parse.
@@ -577,11 +577,11 @@ If useful, add:
 
 ### Phase 3: first useful read commands
 
-- [ ] Implement `plg get` with path, tag, and field selection.
-- [ ] Implement `plg search` with text search and field-aware filters.
-- [ ] Implement `plg tree` for document and dotted-tag hierarchy views.
-- [ ] Implement `plg stats` for repository summary metrics.
-- [ ] Add integration and snapshot tests for read commands.
+- [x] Implement `plg get` with path, tag, and field selection.
+- [x] Implement `plg search` with text search and field-aware filters.
+- [x] Implement `plg tree` for document and dotted-tag hierarchy views.
+- [x] Implement `plg stats` for repository summary metrics.
+- [x] Add integration and snapshot tests for read commands.
 
 ### Phase 4: local quality commands
 
@@ -593,33 +593,33 @@ If useful, add:
 
 ### Phase 5: prompt-emitting LLM commands
 
-- [ ] Implement a prompt template adapter that loads prompt files from the workspace.
-- [ ] Implement `plg convert` to compose and print a conversion prompt from document or stdin input.
-- [ ] Implement `plg qa` to compose and print a quality-audit prompt from one or more files.
-- [ ] Add tests proving prompt composition is deterministic and complete.
-- [ ] Add clear help text stating that these commands emit prompts and do not call external models.
+- [x] Implement a prompt template adapter that loads prompt files from the workspace.
+- [x] Implement `plg convert` to compose and print a conversion prompt from document or stdin input.
+- [x] Implement `plg qa` to compose and print a quality-audit prompt from one or more files.
+- [x] Add tests proving prompt composition is deterministic and complete.
+- [x] Add clear help text stating that these commands emit prompts and do not call external models.
 
 ### Phase 6: workspace and ecosystem commands
 
-- [ ] Implement `plg init` to scaffold a repository layout and starter files.
-- [ ] Implement `plg new` for template-based object generation.
+- [x] Implement `plg init` to scaffold a repository layout and starter files.
+- [x] Implement `plg new` for template-based object generation.
 - [ ] Implement `plg index` with in-memory rebuild behavior and future persistence seam.
 - [ ] Implement `plg graph` with DOT export as the first output target.
 - [ ] Implement `plg doctor`, `plg config`, `plg export`, `plg import`, `plg completion`, and `plg version`.
-- [ ] Add integration tests for scaffolding, config, and export flows.
+- [x] Add integration tests for scaffolding, config, and export flows.
 
 ### Phase 7: polish and release readiness
 
-- [ ] Improve help text, examples, and error messages across all commands.
-- [ ] Verify stdout/stderr discipline and stable exit codes.
-- [ ] Run `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test`, and `cargo doc --no-deps` cleanly.
+- [x] Improve help text, examples, and error messages across all commands.
+- [x] Verify stdout/stderr discipline and stable exit codes.
+- [x] Run `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test`, and `cargo doc --no-deps` cleanly.
 - [ ] Add CI configuration for formatting, linting, tests, and docs.
-- [ ] Write end-user CLI documentation and command examples.
+- [x] Write end-user CLI documentation and command examples.
 
 ## Design decisions to lock early
 
 - [ ] Confirm whether `get` should support a `--output detailed` mode instead of keeping a separate `describe` command.
-- [ ] Confirm the initial workspace root and default document search paths.
+- [x] Confirm the initial workspace root and default document search paths.
 - [ ] Confirm whether persisted indexing is in scope for v1 or deferred.
 - [ ] Confirm whether `import` is needed in v1 or should be postponed until the markdown model stabilizes.
 - [ ] Confirm whether graph output should be DOT-only in v1.
