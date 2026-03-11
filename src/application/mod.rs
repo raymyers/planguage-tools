@@ -3,7 +3,7 @@ pub mod error;
 use std::path::{Path, PathBuf};
 
 use crate::adapters::fs_repository::FsDocumentRepository;
-use crate::domain::document::DocumentSummary;
+use crate::domain::document::{DocumentSummary, SearchQuery};
 use crate::domain::metadata::BuildMetadata;
 use crate::ports::repository::DocumentRepository;
 
@@ -32,5 +32,12 @@ impl App {
 
     pub fn list_documents(&self) -> Result<Vec<DocumentSummary>, error::AppError> {
         self.documents.list_markdown(self.workspace_root())
+    }
+
+    pub fn search_documents(
+        &self,
+        query: &SearchQuery,
+    ) -> Result<Vec<DocumentSummary>, error::AppError> {
+        self.documents.search_markdown(self.workspace_root(), query)
     }
 }

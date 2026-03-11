@@ -4,11 +4,13 @@ use crate::application::App;
 use crate::cli::args::Command;
 
 mod get;
+mod search;
 mod version;
 
 pub fn run(command: Command, app: &App) -> Result<ExitCode, crate::application::error::AppError> {
     match command {
         Command::Get(args) => get::run(args, app),
+        Command::Search(args) => search::run(args, app),
         Command::Version => version::run(app),
     }
 }
