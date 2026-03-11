@@ -45,11 +45,30 @@ Owner: Team
 
     let mut cmd = Command::cargo_bin("plg").unwrap();
     cmd.current_dir(temp.path())
-        .args(["qa", "--file", "docs/spec.md"])
+        .args(["qa", "-f", "docs/spec.md"])
         .assert()
         .success()
         .stdout(predicate::str::contains(
             "Professional Specification Quality Control",
         ))
         .stdout(predicate::str::contains("Tag: Quality"));
+}
+
+#[test]
+fn convert_accepts_piped_stdin() {
+    let temp = tempdir().unwrap();
+    fs::create_dir(temp.path().join("prompts")).unwrap();
+    fs::copy(
+        "/home/ray/dev/planguage-tools/prompts/planguage_conversion.md",
+        temp.path().join("prompts/planguage_conversion.md"),
+    )
+    .unwrap();
+
+    let mut cmd = Command::cargo_bin("plg").unwrap();
+    cmd.current_dir(temp.path())
+        .write_stdin("Piped prose input")
+        .arg("convert")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Piped prose input"));
 }

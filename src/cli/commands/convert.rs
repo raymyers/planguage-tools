@@ -1,5 +1,5 @@
 use std::fs;
-use std::io::{self, Read};
+use std::io::{self, IsTerminal, Read};
 use std::process::ExitCode;
 
 use crate::application::App;
@@ -28,6 +28,10 @@ fn load_input(args: PromptArgs, app: &App) -> Result<String, crate::application:
 
     if let Some(text) = args.text {
         return Ok(text);
+    }
+
+    if io::stdin().is_terminal() {
+        return Err(crate::application::error::AppError::PromptInputRequired);
     }
 
     let mut buffer = String::new();

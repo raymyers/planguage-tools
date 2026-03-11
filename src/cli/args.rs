@@ -38,7 +38,7 @@ pub enum Command {
 #[derive(Debug, clap::Args)]
 pub struct PromptArgs {
     /// Read input content from a file relative to the current workspace
-    #[arg(long, conflicts_with = "text")]
+    #[arg(short = 'f', long, conflicts_with = "text")]
     pub file: Option<String>,
     /// Use direct text input instead of a file
     #[arg(long, conflicts_with = "file")]
