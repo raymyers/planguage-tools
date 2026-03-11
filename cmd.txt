@@ -1,0 +1,24 @@
+plang get — Display documents, tags, or selected fields in concise, detailed, or script-friendly formats.
+plang search — Search across Planguage markdown for tags, terms, sources, owners, risks, or fuzzy markers.
+plang tree — Show the hierarchy of documents, sections, and dotted Planguage tags as a tree.
+plang convert — Transform prose or semi-structured specs into grounded Planguage syntax.
+plang qa — Audit a document for specification quality defects using SQC and Planguage rules.
+plang lint — Check Planguage files for structural, syntax, and style issues without rewriting them.
+plang fmt — Reformat Planguage markdown into a consistent canonical layout.
+plang diff — Compare two documents or versions by semantic fields instead of plain text only.
+plang patch — Apply targeted updates to specific tags or parameters in an existing document.
+plang annotate — Add notes, sources, assumptions, or risk annotations to a spec item.
+plang split — Break a large document into smaller tagged units or per-object files.
+plang merge — Combine related Planguage fragments into a single structured document.
+plang init — Create a new Planguage workspace, repo layout, or starter document templates.
+plang new — Generate a new Planguage document or object from a template.
+plang index — Build or refresh a local search index for fast document lookup.
+plang stats — Report counts, coverage, defect density, fuzzy terms, and other repository metrics.
+plang graph — Visualize links between tags, sources, owners, assumptions, and dependent specs.
+plang doctor — Diagnose workspace, config, parser, or indexing problems and suggest fixes.
+plang config — View or manage CLI configuration, defaults, and workspace settings.
+plang completion — Generate shell completion scripts for supported shells.
+plang export — Render Planguage content into JSON, CSV, HTML, or other downstream formats.
+plang import — Ingest markdown or structured data into the Planguage workspace model.
+plang help — Show help for commands, flags, concepts, and common task workflows.
+plang version — Print the CLI version, build info, and supported capability set.

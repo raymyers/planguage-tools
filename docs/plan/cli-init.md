@@ -1,0 +1,588 @@
+# plg CLI implementation plan
+
+## Goals
+
+Build a Rust CLI named `plg` for navigating and manipulating Planguage markdown documents.
+
+The CLI should:
+- provide a clean, kubectl-style verb-oriented command surface,
+- use ports-and-adapters architecture so parsing, storage, indexing, and LLM integrations remain replaceable,
+- treat local markdown as the source of truth,
+- support both human-friendly and automation-friendly output modes,
+- implement LLM-facing commands as prompt emitters first,
+- ship with strong automated test coverage,
+- and pass formatting, lint, and documentation checks.
+
+## Proposed command surface
+
+- `plg get` — Display documents, tags, or selected fields in concise, detailed, or script-friendly formats.
+- `plg search` — Search across Planguage markdown for tags, terms, sources, owners, risks, or fuzzy markers.
+- `plg tree` — Show the hierarchy of documents, sections, and dotted Planguage tags as a tree.
+- `plg convert` — Emit a prompt for transforming prose or semi-structured specs into grounded Planguage syntax.
+- `plg qa` — Emit a prompt for specification quality analysis using SQC and Planguage rules.
+- `plg lint` — Check Planguage files for structural, syntax, and style issues without rewriting them.
+- `plg fmt` — Reformat Planguage markdown into a consistent canonical layout.
+- `plg diff` — Compare two documents or versions by semantic fields instead of plain text only.
+- `plg patch` — Apply targeted updates to specific tags or parameters in an existing document.
+- `plg annotate` — Add notes, sources, assumptions, or risk annotations to a spec item.
+- `plg split` — Break a large document into smaller tagged units or per-object files.
+- `plg merge` — Combine related Planguage fragments into a single structured document.
+- `plg init` — Create a new Planguage workspace, repo layout, or starter document templates.
+- `plg new` — Generate a new Planguage document or object from a template.
+- `plg index` — Build or refresh a local search index for fast document lookup.
+- `plg stats` — Report counts, coverage, defect density, fuzzy terms, and other repository metrics.
+- `plg graph` — Visualize links between tags, sources, owners, assumptions, and dependent specs.
+- `plg doctor` — Diagnose workspace, config, parser, or indexing problems and suggest fixes.
+- `plg config` — View or manage CLI configuration, defaults, and workspace settings.
+- `plg completion` — Generate shell completion scripts for supported shells.
+- `plg export` — Render Planguage content into JSON, CSV, HTML, or other downstream formats.
+- `plg import` — Ingest markdown or structured data into the Planguage workspace model.
+- `plg help` — Show help for commands, flags, concepts, and common task workflows.
+- `plg version` — Print the CLI version, build info, and supported capability set.
+
+## Architecture
+
+### Architectural style
+
+Use a ports-and-adapters layout with a small application core:
+
+- **Domain layer**: Planguage concepts, validation rules, semantic IDs, metrics, and document model.
+- **Application layer**: use cases for each command, query services, formatters, mutation services, and prompt generation.
+- **Ports**: traits for document repositories, parsers, index stores, prompt template providers, clocks, filesystem access, and terminal output.
+- **Adapters**: markdown filesystem repository, parser implementation, ripgrep or in-process search adapter, prompt-file adapter, terminal renderer, JSON renderer, and config loader.
+- **CLI layer**: command parsing, flag validation, output mode selection, exit code mapping, and user-facing errors.
+
+### Suggested crate layout
+
+```text
+src/
+  main.rs
+  cli/
+    mod.rs
+    args.rs
+    commands/
+      get.rs
+      search.rs
+      tree.rs
+      convert.rs
+      qa.rs
+      lint.rs
+      fmt.rs
+      diff.rs
+      patch.rs
+      annotate.rs
+      split.rs
+      merge.rs
+      init.rs
+      new.rs
+      index.rs
+      stats.rs
+      graph.rs
+      doctor.rs
+      config.rs
+      completion.rs
+      export.rs
+      import.rs
+  application/
+    mod.rs
+    use_cases/
+    services/
+    dto/
+  domain/
+    mod.rs
+    document.rs
+    object.rs
+    field.rs
+    tag.rs
+    diagnostics.rs
+    rules.rs
+    query.rs
+  ports/
+    mod.rs
+    repository.rs
+    parser.rs
+    index.rs
+    prompts.rs
+    output.rs
+    filesystem.rs
+    clock.rs
+  adapters/
+    mod.rs
+    fs_repository.rs
+    markdown_parser.rs
+    in_memory_index.rs
+    prompt_files.rs
+    terminal_output.rs
+    json_output.rs
+    config.rs
+  testing/
+    fixtures.rs
+    builders.rs
+```
+
+### Dependency guidance
+
+Prefer small, established Rust crates only where justified by project needs. Likely candidates:
+
+- `clap` for CLI parsing and shell completion,
+- `serde` and `serde_json` for structured output,
+- `thiserror` or `anyhow` depending on error strategy,
+- `ignore` or `walkdir` for repository traversal,
+- `regex` only if needed and kept constrained,
+- `insta` for snapshot tests if output formatting becomes significant,
+- `assert_cmd` and `predicates` for CLI integration tests.
+
+Avoid overcommitting to heavyweight parser frameworks until the document model stabilizes.
+
+## Command behavior plan
+
+### Read/query commands
+
+#### `plg get`
+
+Purpose:
+- primary read surface for documents and objects,
+- can subsume old `describe` behavior via flags.
+
+Expected capabilities:
+- get documents by path, tag, owner, type, or source,
+- support output presets such as table, wide, json, yaml-like plain text, and detailed,
+- allow field projection like `--fields tag,type,owner,target`,
+- support filters and sorting for scripting.
+
+#### `plg search`
+
+Purpose:
+- full-text and structured search across markdown and parsed fields.
+
+Expected capabilities:
+- plain text search,
+- tag-prefix search,
+- field-aware search such as `owner:`, `source:`, `risk:`, `fuzzy:true`,
+- regex mode only if clearly valuable,
+- optional search against a refreshed index for speed.
+
+#### `plg tree`
+
+Purpose:
+- visualize document and dotted-tag hierarchy.
+
+Expected capabilities:
+- show nested tags,
+- collapse or expand by depth,
+- optionally root at a specific document or tag.
+
+#### `plg stats`
+
+Purpose:
+- summarize repository health and composition.
+
+Expected capabilities:
+- document counts,
+- object counts by type,
+- fields coverage,
+- fuzzy term counts,
+- source coverage,
+- defect counts from lint,
+- repository-level metrics suitable for CI.
+
+#### `plg graph`
+
+Purpose:
+- expose relationships between objects.
+
+Expected capabilities:
+- output adjacency lists or DOT format first,
+- optionally focus on source, owner, or tag lineage.
+
+### LLM-facing commands
+
+These should emit prompts only in the first implementation phase.
+
+#### `plg convert`
+
+Purpose:
+- generate a prompt payload based on `prompts/planguage_conversion.md` plus user input.
+
+Behavior:
+- accept input from file, stdin, or direct text,
+- print the composed prompt to stdout,
+- optionally include metadata such as source file name or timestamp,
+- avoid making network calls in the initial implementation.
+
+#### `plg qa`
+
+Purpose:
+- generate a prompt payload based on `prompts/planguage_spec_quality_control.md` plus the target document content.
+
+Behavior:
+- accept one or more files,
+- print a ready-to-send quality-audit prompt,
+- optionally support prompt-only vs wrapped-document modes.
+
+### Mutation commands
+
+#### `plg patch`
+
+Purpose:
+- apply targeted semantic edits to existing objects.
+
+Expected capabilities:
+- patch by tag and field,
+- support replace, insert, and remove operations,
+- write changes safely with diff preview and atomic file replacement.
+
+#### `plg annotate`
+
+Purpose:
+- add comment or metadata fields without forcing users to hand-edit markdown.
+
+Expected capabilities:
+- append `Note`, `Comment`, `Source`, `Assumptions`, or `Risks`,
+- preserve formatting conventions.
+
+#### `plg split`
+
+Purpose:
+- normalize large documents into smaller reusable units.
+
+Expected capabilities:
+- split by top-level heading, tag prefix, or object boundary,
+- generate stable file names.
+
+#### `plg merge`
+
+Purpose:
+- combine fragments while preserving ordering and metadata.
+
+Expected capabilities:
+- merge by file list, directory, or tag family,
+- detect duplicate tags before writing.
+
+### Quality and formatting commands
+
+#### `plg lint`
+
+Purpose:
+- provide local structural and semantic checks without external AI.
+
+Checks to include:
+- missing required fields such as `Tag`, `Type`, `Version`, `Status`, `Owner`,
+- duplicate tags,
+- malformed source markers,
+- suspicious fuzzy terms not wrapped in angle brackets,
+- invalid hierarchy formatting,
+- commentary mixed with critical text when detectable.
+
+#### `plg fmt`
+
+Purpose:
+- canonicalize field ordering, spacing, headings, indentation, and blank lines.
+
+Rules:
+- preserve meaning,
+- avoid destructive rewriting of unknown content,
+- support `--check` mode for CI.
+
+#### `plg diff`
+
+Purpose:
+- compare semantic changes between two files or two revisions of one file.
+
+Expected capabilities:
+- field-level diff for objects with the same tag,
+- added/removed object reporting,
+- optional fallback to text diff when parsing fails.
+
+### Workspace commands
+
+#### `plg init`
+
+Purpose:
+- bootstrap a repo structure for Planguage work.
+
+Suggested scaffold:
+- `docs/planguage/`
+- `docs/planguage/fragments/`
+- `docs/planguage/templates/`
+- `prompts/`
+- example config file,
+- example document with canonical fields.
+
+#### `plg new`
+
+Purpose:
+- generate starter docs or objects.
+
+Templates:
+- requirement,
+- performance goal,
+- resource,
+- function,
+- process entry/task/exit block.
+
+#### `plg index`
+
+Purpose:
+- build a fast reusable index for search and stats.
+
+First phase:
+- support in-memory rebuilds.
+
+Later phase:
+- optional persisted index under project-local cache.
+
+#### `plg doctor`
+
+Purpose:
+- diagnose bad config, invalid prompt paths, parse failures, and index issues.
+
+#### `plg config`
+
+Purpose:
+- inspect and update effective configuration.
+
+#### `plg export`
+
+Purpose:
+- convert parsed Planguage content into machine-consumable formats.
+
+#### `plg import`
+
+Purpose:
+- ingest compatible structured representations into markdown.
+
+## Data model plan
+
+Define a minimal domain model first.
+
+### Core entities
+
+- `Document`
+  - path,
+  - title,
+  - raw markdown,
+  - parsed objects,
+  - diagnostics.
+- `PlanguageObject`
+  - tag,
+  - type,
+  - version,
+  - status,
+  - owner,
+  - authority,
+  - gist or ambition,
+  - scale,
+  - meter,
+  - qualifiers,
+  - source,
+  - note/comment,
+  - assumptions,
+  - risks,
+  - extra fields.
+- `Diagnostic`
+  - severity,
+  - code,
+  - message,
+  - location,
+  - suggested fix.
+
+### Parsing strategy
+
+Start with a tolerant line-oriented parser that:
+- recognizes `Field: value` pairs,
+- tracks heading context,
+- supports repeated fields where valid,
+- preserves unknown fields,
+- records parse warnings rather than failing hard.
+
+Avoid a strict grammar parser initially; correctness and recoverability matter more than perfect formalism at bootstrap.
+
+## Output modes
+
+Support consistent output contracts across commands.
+
+- human table
+- detailed text
+- json
+- json-lines where helpful
+- dot for graph output
+
+Design output rendering behind an output port so use cases remain presentation-agnostic.
+
+## Error handling and exit codes
+
+Define predictable exit codes.
+
+- `0` success,
+- `1` generic runtime or usage failure,
+- `2` parse or validation failure,
+- `3` lint or qa findings above threshold,
+- `4` not found,
+- `5` conflicting mutation request.
+
+Translate domain and adapter errors into consistent user-facing messages.
+
+## Configuration plan
+
+Support layered config with clear precedence:
+1. command flags,
+2. environment variables,
+3. workspace config,
+4. user config.
+
+Suggested config settings:
+- workspace root,
+- default docs paths,
+- default output mode,
+- prompt file locations,
+- index cache location,
+- formatting preferences,
+- fuzzy-term dictionary overrides.
+
+On Linux, prefer XDG-compatible user config placement.
+
+## Testing strategy
+
+Testing must be built in from the start.
+
+### Unit tests
+
+Cover:
+- tag parsing,
+- field parsing,
+- dotted hierarchy behavior,
+- diagnostics generation,
+- formatter stability,
+- prompt composition.
+
+### Integration tests
+
+Cover:
+- end-to-end CLI invocations with fixture repositories,
+- `get`, `search`, `tree`, `lint`, `fmt --check`, `patch`, and `init`,
+- stdout/stderr separation,
+- exit codes,
+- config precedence.
+
+### Snapshot tests
+
+Use for:
+- table output,
+- tree output,
+- semantic diffs,
+- generated prompt text where stable.
+
+### Property or fuzz tests
+
+Consider for:
+- parser resilience,
+- formatter idempotence,
+- split/merge round-trip safety.
+
+## Linting and quality gates
+
+The implementation is not complete until it passes all quality gates.
+
+Planned gates:
+- `cargo fmt --check`
+- `cargo clippy --all-targets --all-features -- -D warnings`
+- `cargo test`
+- `cargo doc --no-deps`
+
+If useful, add:
+- `cargo deny` for dependency policy,
+- `cargo audit` for known vulnerabilities.
+
+## Implementation sequence
+
+### Phase 1: bootstrap
+
+- [ ] Create a Rust binary crate with executable name `plg`.
+- [ ] Add core dependencies for CLI parsing, serialization, errors, traversal, and testing.
+- [ ] Establish the ports-and-adapters module layout.
+- [ ] Add a minimal config loader and workspace root discovery.
+- [ ] Add a shared error type and exit code mapper.
+- [ ] Add fixture-based integration test infrastructure.
+
+### Phase 2: parsing and repository core
+
+- [ ] Implement filesystem document discovery for markdown files.
+- [ ] Implement a tolerant markdown-to-object parser for Planguage field blocks.
+- [ ] Model `Document`, `PlanguageObject`, and `Diagnostic` domain types.
+- [ ] Preserve unknown fields and source locations during parse.
+- [ ] Add unit tests for parsing edge cases and malformed input.
+
+### Phase 3: first useful read commands
+
+- [ ] Implement `plg get` with path, tag, and field selection.
+- [ ] Implement `plg search` with text search and field-aware filters.
+- [ ] Implement `plg tree` for document and dotted-tag hierarchy views.
+- [ ] Implement `plg stats` for repository summary metrics.
+- [ ] Add integration and snapshot tests for read commands.
+
+### Phase 4: local quality commands
+
+- [ ] Implement `plg lint` with structural and semantic checks.
+- [ ] Implement `plg fmt` and `plg fmt --check` with stable canonical output.
+- [ ] Implement `plg diff` with semantic comparison and parse-fallback behavior.
+- [ ] Add idempotence tests for formatter behavior.
+- [ ] Add regression tests for diagnostics and exit codes.
+
+### Phase 5: prompt-emitting LLM commands
+
+- [ ] Implement a prompt template adapter that loads prompt files from the workspace.
+- [ ] Implement `plg convert` to compose and print a conversion prompt from document or stdin input.
+- [ ] Implement `plg qa` to compose and print a quality-audit prompt from one or more files.
+- [ ] Add tests proving prompt composition is deterministic and complete.
+- [ ] Add clear help text stating that these commands emit prompts and do not call external models.
+
+### Phase 6: mutation commands
+
+- [ ] Implement `plg patch` with safe write, dry-run, and diff preview support.
+- [ ] Implement `plg annotate` for note, source, assumption, and risk additions.
+- [ ] Implement `plg split` for object-boundary and heading-based extraction.
+- [ ] Implement `plg merge` with duplicate-tag detection.
+- [ ] Add round-trip tests for patch, split, and merge operations.
+
+### Phase 7: workspace and ecosystem commands
+
+- [ ] Implement `plg init` to scaffold a repository layout and starter files.
+- [ ] Implement `plg new` for template-based object generation.
+- [ ] Implement `plg index` with in-memory rebuild behavior and future persistence seam.
+- [ ] Implement `plg graph` with DOT export as the first output target.
+- [ ] Implement `plg doctor`, `plg config`, `plg export`, `plg import`, `plg completion`, and `plg version`.
+- [ ] Add integration tests for scaffolding, config, and export flows.
+
+### Phase 8: polish and release readiness
+
+- [ ] Improve help text, examples, and error messages across all commands.
+- [ ] Verify stdout/stderr discipline and stable exit codes.
+- [ ] Run `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test`, and `cargo doc --no-deps` cleanly.
+- [ ] Add CI configuration for formatting, linting, tests, and docs.
+- [ ] Write end-user CLI documentation and command examples.
+
+## Design decisions to lock early
+
+- [ ] Confirm whether `get` should support a `--output detailed` mode instead of keeping a separate `describe` command.
+- [ ] Confirm the initial workspace root and default document search paths.
+- [ ] Confirm whether persisted indexing is in scope for v1 or deferred.
+- [ ] Confirm whether `import` is needed in v1 or should be postponed until the markdown model stabilizes.
+- [ ] Confirm whether graph output should be DOT-only in v1.
+
+## Non-goals for v1
+
+- direct LLM API integration,
+- collaborative multi-user editing,
+- a fully formal markdown grammar,
+- remote document stores,
+- background daemons or always-on indexing.
+
+## Definition of done
+
+The initial `plg` CLI is done when:
+- the Rust binary builds cleanly,
+- core commands for read, search, lint, format, prompt emission, and safe patching work on fixture repositories,
+- architecture boundaries are enforced through ports and adapters,
+- automated tests cover domain, application, adapters, and CLI behavior,
+- and formatting, linting, tests, and docs all pass in CI.
