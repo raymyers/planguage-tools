@@ -19,6 +19,8 @@ pub enum Command {
     Get(GetArgs),
     /// Search markdown documents in the workspace
     Search(SearchArgs),
+    /// Show the markdown document hierarchy in the workspace
+    Tree(TreeArgs),
     /// Show build and version information
     Version,
 }
@@ -35,6 +37,13 @@ pub struct SearchArgs {
     /// Text to search for in markdown documents
     pub needle: String,
     /// Limit search to markdown files under a relative path prefix
+    #[arg(long)]
+    pub path_prefix: Option<String>,
+}
+
+#[derive(Debug, clap::Args)]
+pub struct TreeArgs {
+    /// Limit the tree to markdown files under a relative path prefix
     #[arg(long)]
     pub path_prefix: Option<String>,
 }
