@@ -14,6 +14,7 @@ use crate::ports::repository::DocumentRepository;
 pub struct App {
     metadata: BuildMetadata,
     workspace_root: PathBuf,
+    source_root: PathBuf,
     documents: Box<dyn DocumentRepository>,
     prompts: Box<dyn PromptLoader>,
 }
@@ -23,6 +24,7 @@ impl App {
         Ok(Self {
             metadata: BuildMetadata::current(),
             workspace_root: WorkspaceLocator::find(std::env::current_dir()?)?,
+            source_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")),
             documents: Box::<FsDocumentRepository>::default(),
             prompts: Box::<FsPromptLoader>::default(),
         })
@@ -75,5 +77,9 @@ impl App {
 
     pub fn load_prompt(&self, relative_path: &str) -> Result<String, error::AppError> {
         self.prompts.load(self.workspace_root(), relative_path)
+    }
+
+    pub fn load_builtin_prompt(&self, relative_path: &str) -> Result<String, error::AppError> {
+        self.prompts.load(&self.source_root, relative_path)
     }
 }

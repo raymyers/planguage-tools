@@ -18,6 +18,16 @@ fn init_creates_workspace_layout_in_current_directory() {
     assert!(temp.path().join("docs/planguage/fragments").is_dir());
     assert!(temp.path().join("docs/planguage/example.md").is_file());
     assert!(temp.path().join("plg.toml").is_file());
+    assert!(
+        temp.path()
+            .join("prompts/planguage_conversion.md")
+            .is_file()
+    );
+    assert!(
+        temp.path()
+            .join("prompts/planguage_spec_quality_control.md")
+            .is_file()
+    );
 }
 
 #[test]

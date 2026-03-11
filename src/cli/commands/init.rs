@@ -24,6 +24,9 @@ const DEFAULT_CONFIG: &str = r#"[workspace]
 doc_paths = ["docs/planguage"]
 "#;
 
+const CONVERT_PROMPT_PATH: &str = "prompts/planguage_conversion.md";
+const QA_PROMPT_PATH: &str = "prompts/planguage_spec_quality_control.md";
+
 pub fn run(args: InitArgs, app: &App) -> Result<ExitCode, crate::application::error::AppError> {
     let target_dir = args
         .dir
@@ -39,6 +42,8 @@ pub fn run(args: InitArgs, app: &App) -> Result<ExitCode, crate::application::er
         SAMPLE_DOCUMENT,
     )?;
     write_if_missing(target_dir.join("plg.toml"), DEFAULT_CONFIG)?;
+    copy_prompt_if_missing(app, &target_dir, CONVERT_PROMPT_PATH)?;
+    copy_prompt_if_missing(app, &target_dir, QA_PROMPT_PATH)?;
 
     println!("initialized {}", target_dir.display());
     Ok(ExitCode::SUCCESS)
@@ -52,5 +57,25 @@ fn write_if_missing(
         fs::write(path, content)?;
     }
 
+    Ok(())
+}
+
+fn copy_prompt_if_missing(
+    app: &App,
+    target_dir: &std::path::Path,
+    relative_path: &str,
+) -> Result<(), crate::application::error::AppError> {
+    let target_path = target_dir.join(relative_path);
+
+    if target_path.exists() {
+        return Ok(());
+    }
+
+    if let Some(parent) = target_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    let content = app.load_builtin_prompt(relative_path)?;
+    fs::write(target_path, content)?;
     Ok(())
 }
