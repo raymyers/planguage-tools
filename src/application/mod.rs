@@ -4,14 +4,17 @@ use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use crate::adapters::fs_repository::FsDocumentRepository;
+use crate::adapters::prompt_loader::FsPromptLoader;
 use crate::domain::document::{DocumentStats, DocumentSummary, SearchQuery};
 use crate::domain::metadata::BuildMetadata;
+use crate::ports::prompts::PromptLoader;
 use crate::ports::repository::DocumentRepository;
 
 pub struct App {
     metadata: BuildMetadata,
     workspace_root: PathBuf,
     documents: Box<dyn DocumentRepository>,
+    prompts: Box<dyn PromptLoader>,
 }
 
 impl App {
@@ -20,6 +23,7 @@ impl App {
             metadata: BuildMetadata::current(),
             workspace_root: std::env::current_dir()?,
             documents: Box::<FsDocumentRepository>::default(),
+            prompts: Box::<FsPromptLoader>::default(),
         })
     }
 
@@ -66,5 +70,9 @@ impl App {
             markdown_files,
             directories_with_markdown: directories.len(),
         })
+    }
+
+    pub fn load_prompt(&self, relative_path: &str) -> Result<String, error::AppError> {
+        self.prompts.load(self.workspace_root(), relative_path)
     }
 }

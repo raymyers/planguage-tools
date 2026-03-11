@@ -6,4 +6,6 @@ pub enum AppError {
     Io(#[from] std::io::Error),
     #[error(transparent)]
     Walk(#[from] ignore::Error),
+    #[error("prompt template not found: {0}")]
+    PromptNotFound(String),
 }
