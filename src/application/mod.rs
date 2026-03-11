@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 use crate::adapters::fs_repository::FsDocumentRepository;
 use crate::adapters::prompt_loader::FsPromptLoader;
+use crate::adapters::workspace::WorkspaceLocator;
 use crate::domain::document::{DocumentStats, DocumentSummary, SearchQuery};
 use crate::domain::metadata::BuildMetadata;
 use crate::ports::prompts::PromptLoader;
@@ -21,7 +22,7 @@ impl App {
     pub fn new() -> Result<Self, error::AppError> {
         Ok(Self {
             metadata: BuildMetadata::current(),
-            workspace_root: std::env::current_dir()?,
+            workspace_root: WorkspaceLocator::find(std::env::current_dir()?)?,
             documents: Box::<FsDocumentRepository>::default(),
             prompts: Box::<FsPromptLoader>::default(),
         })
