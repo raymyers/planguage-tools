@@ -19,6 +19,8 @@ pub enum Command {
     Convert(PromptArgs),
     /// List markdown documents in the workspace
     Get(GetArgs),
+    /// Create a starter Planguage workspace layout
+    Init(InitArgs),
     /// Emit a quality-analysis prompt using input text or a file
     Qa(PromptArgs),
     /// Search markdown documents in the workspace
@@ -46,6 +48,13 @@ pub struct GetArgs {
     /// Limit output to markdown files under a relative path prefix
     #[arg(long)]
     pub path_prefix: Option<String>,
+}
+
+#[derive(Debug, clap::Args)]
+pub struct InitArgs {
+    /// Target directory to initialize; defaults to the current directory
+    #[arg(long)]
+    pub dir: Option<String>,
 }
 
 #[derive(Debug, clap::Args)]
