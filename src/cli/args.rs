@@ -15,6 +15,15 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
+    /// List markdown documents in the workspace
+    Get(GetArgs),
     /// Show build and version information
     Version,
+}
+
+#[derive(Debug, clap::Args)]
+pub struct GetArgs {
+    /// Limit output to markdown files under a relative path prefix
+    #[arg(long)]
+    pub path_prefix: Option<String>,
 }
